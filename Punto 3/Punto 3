@@ -1,0 +1,196 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPMFsrgII2tV8yF9MfrMGMh",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/jfbenitezz/ProyectoPokemon/blob/main/Punto%203/Punto%203.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Se busca implementar la inserción en los arboles B acorde con las reglas dadas:\n",
+        "-Todas los nodos hojas estan al mismo nivel.\n",
+        "-Todo nodo excecto la raiz deben tener al menos tam-1 llaves.\n",
+        "-Todo nodo debe tener como maximo (2*tam)-1 llaves. \n",
+        "-El numero de hijos de un nodo es igual a su numero de llaves + 1.\n",
+        "-Las llaves en los nodos estan ordenadas ascendentemente.\n",
+        "-La insercion solo ocurre en los nodos hoja. \n",
+        "\n",
+        "\n",
+        "Se implementa la busqueda de una llave k siguiendo las reglas dadas.\n",
+        "-Todos los elementos en el subárbol izquierdo  son menores y todos los          elementos en el subárbol derecho son mayores, y aquellos con valores intermedios se almacenan en los subarboles internos.\n",
+        "-Se inicia por la raiz y se recorre mediante llamados recursivos.\n",
+        "-Para cada nodo no hoja, si no contiene la llave, empleamos la llamada recursiva para bajar a sus hijo, en caso de que la contenga se detiene la búsqueda.\n",
+        "-Si llegamos a un nodo hoja y no encontramos k retornamos nulo.\n"
+      ],
+      "metadata": {
+        "id": "_agC5cKt7byd"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "import random\n",
+        "# Nodo\n",
+        "class BNode:\n",
+        "  def __init__(self, leaf=False):\n",
+        "    self.keys = []\n",
+        "    self.children = []\n",
+        "    self.leaf = leaf\n",
+        "\n",
+        "\n",
+        "# Arbol\n",
+        "# Se tiene un tam que es la cantidad de llaves minimas de cada nodo para permitir crear otro nodo\n",
+        "class BTree:\n",
+        "  def __init__(self, tam):\n",
+        "    self.root = BNode(True)\n",
+        "    self.tam = tam\n",
+        "\n",
+        "# Insertar llave \n",
+        "# Se verifica si el numero de llaves es mayor que (t*2)-1 que equivale al n del arbol\n",
+        "# Lo que indica un nodo lleno, por lo se debe aumentar la altura\n",
+        "  def insert(self, k):\n",
+        "    root = self.root\n",
+        "    if len(root.keys) == (2 * self.tam) - 1:\n",
+        "      temp = BNode() # Se asigna una raiz nueva \n",
+        "      self.root = temp\n",
+        "      temp.children.insert(0, root) # Mediante splits se reorganiza el arbol\n",
+        "      self.split_children(temp, 0)\n",
+        "      self.insert_non_full(temp, k) # Una vez reorganizado se inserta normalmente \n",
+        "    else:\n",
+        "      self.insert_non_full(root, k)\n",
+        "\n",
+        "    # Insertar si el nodo no esta lleno\n",
+        "  def insert_non_full(self, node, k):\n",
+        "    i = len(node.keys) - 1\n",
+        "    if node.leaf:\n",
+        "      # Se busca la posicion que le corresonde a la llave\n",
+        "      node.keys.append((None, None))\n",
+        "      while i >= 0 and k[0] < node.keys[i][0]: \n",
+        "        node.keys[i + 1] = node.keys[i]\n",
+        "        i -= 1\n",
+        "      node.keys[i + 1] = k\n",
+        "    else:\n",
+        "      while i >= 0 and k[0] < node.keys[i][0]:\n",
+        "        i -= 1\n",
+        "      i += 1\n",
+        "      if len(node.children[i].keys) == (2 * self.tam) - 1: # overflow\n",
+        "        self.split_children(node, i)\n",
+        "        if k[0] > node.keys[i][0]:\n",
+        "          i += 1\n",
+        "      self.insert_non_full(node.children[i], k)\n",
+        "\n",
+        "# Separar hijos\n",
+        "# En el split se \"sube\" la llave mediana, se asignan las llaves a su izquierda como hijos izquierdos,\n",
+        "# y las llaves a su derecha como hijos derechos\n",
+        "  def split_children(self, parent, i):\n",
+        "    lchild = parent.children[i]\n",
+        "    rchild = BNode(True)\n",
+        "    tam = self.tam\n",
+        "    parent.children.insert(i + 1, rchild)\n",
+        "    parent.keys.insert(i, lchild.keys[tam - 1])\n",
+        "    rchild.keys = lchild.keys[tam: (2 * tam) - 1]\n",
+        "    lchild.keys = lchild.keys[0: tam - 1]\n",
+        "    if not lchild.leaf:\n",
+        "      rchild.children = lchild.children[tam: 2 * tam]\n",
+        "      lchild.children = lchild.children[0: tam - 1]\n",
+        "\n",
+        "# Se imprime cada nodo con sus nivel y las llaves que contiene y se sigue con sus hijos\n",
+        "  def print_tree(self, node, l=0):\n",
+        "    print(\"Nivel \", l, \"#llaves\", len(node.keys), end=\": \")\n",
+        "    for i in node.keys:\n",
+        "      print(i[0], end=\" \")\n",
+        "    print()\n",
+        "    l += 1\n",
+        "    if len(node.children) > 0:\n",
+        "      for i in node.children:\n",
+        "        self.print_tree(i, l)\n",
+        "\n",
+        "\n",
+        "# Buscar llave en arbol \n",
+        "  def find(self, k, node=None):\n",
+        "    if node is not None:\n",
+        "      i = 0\n",
+        "      while i < len(node.keys) and k > node.keys[i][0]:\n",
+        "        i += 1 # Se recorre las llaves del nodo\n",
+        "      if i < len(node.keys) and k == node.keys[i][0]:\n",
+        "        return (node, i) # Si se halla se devuelve el nodo donde se encuentra y su posición \n",
+        "      elif node.leaf:\n",
+        "        return None # Si llego a la hoja y no hallo no se encontro\n",
+        "      else:\n",
+        "        return self.find(k, node.children[i]) # Si no lo encontro pero no es hoja se hace llamado recursivo\n",
+        "    else:\n",
+        "      return self.find(k, self.root)\n",
+        "\n",
+        "def main():\n",
+        "  B = BTree(3) # 3 es el # de llaves minima para aumentar la altura del arbol\n",
+        "\n",
+        "  for i in range(35): # Se insertan numeros del 1 al 35\n",
+        "    B.insert((i, 2 * i))\n",
+        "  B.print_tree(B.root)\n",
+        "\n",
+        "  if B.find(24) is not None:\n",
+        "    print(\"\\nFound at \", B.find(24))\n",
+        "  else:\n",
+        "    print(\"\\nNot Found\")\n",
+        "\n",
+        "if __name__ == '__main__':\n",
+        "  main()"
+      ],
+      "metadata": {
+        "id": "vKwuRgvntG8I",
+        "outputId": "19c01fe5-4ec3-41e0-9a7f-83ad6fd19a36",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 137,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Nivel  0 #llaves 2: 21 31 \n",
+            "Nivel  1 #llaves 2: 8 18 \n",
+            "Nivel  2 #llaves 2: 2 5 \n",
+            "Nivel  3 #llaves 2: 0 1 \n",
+            "Nivel  3 #llaves 2: 3 4 \n",
+            "Nivel  2 #llaves 2: 11 14 \n",
+            "Nivel  3 #llaves 2: 9 10 \n",
+            "Nivel  3 #llaves 2: 12 13 \n",
+            "Nivel  3 #llaves 3: 15 16 17 \n",
+            "Nivel  1 #llaves 2: 24 27 \n",
+            "Nivel  2 #llaves 2: 22 23 \n",
+            "Nivel  2 #llaves 2: 25 26 \n",
+            "Nivel  2 #llaves 3: 28 29 30 \n",
+            "Nivel  1 #llaves 3: 32 33 34 \n",
+            "\n",
+            "Found at  (<__main__.BNode object at 0x7fa3f84fd910>, 0)\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
